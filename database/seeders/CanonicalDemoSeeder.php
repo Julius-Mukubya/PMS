@@ -178,6 +178,30 @@ class CanonicalDemoSeeder extends Seeder
 
     private function seedUsers(): void
     {
+        $admin = User::withTrashed()->firstOrCreate(
+            ['email' => 'admin@ups.go.ug'],
+            [
+                'account_ref' => 'SYS-ADMIN-0001',
+                'name' => 'System Administrator',
+                'password' => Hash::make(env('ADMIN_PASSWORD', 'Admin123!')),
+                'status' => 'Active',
+                'last_login_at' => now(),
+            ]
+        );
+        $adminRole = Role::where('slug', 'system_admin')->first();
+        $natScope = AccessScope::where('kind', 'National')->first();
+        if ($admin && $adminRole && $natScope) {
+            UserRoleAssignment::firstOrCreate(
+                ['assignment_ref' => 'SYS-URA-ADMIN'],
+                [
+                    'user_id' => $admin->id,
+                    'role_id' => $adminRole->id,
+                    'access_scope_id' => $natScope->id,
+                    'granted_at' => now()->subYear(),
+                ]
+            );
+        }
+
         foreach (UserDemoData::all() as $u) {
             $personnel = null;
             if (! empty($u['personnel_id'])) {
@@ -192,7 +216,7 @@ class CanonicalDemoSeeder extends Seeder
                 [
                     'account_ref' => $u['user_ref'],
                     'name' => $u['name'],
-                    'password' => Hash::make(Str::password(64)),
+                    'password' => Hash::make(env('DEMO_USER_PASSWORD', 'Password123!')),
                     'personnel_id' => $personnel?->id,
                     'status' => $u['status'] ?? 'Active',
                     'last_login_at' => ! empty($u['last_login']) ? $u['last_login'].':00' : null,
