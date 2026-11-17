@@ -81,8 +81,10 @@ return new class extends Migration
             $table->index(['admission_episode_id', 'requested_at']);
         });
 
-        DB::statement('ALTER TABLE admission_episodes ADD CONSTRAINT b1_admission_dates CHECK (closed_at IS NULL OR closed_at >= admitted_at)');
-        DB::statement('ALTER TABLE discharges ADD CONSTRAINT b1_discharge_dates CHECK ((authorized_at IS NULL OR (requested_at IS NOT NULL AND authorized_at >= requested_at)) AND (executed_at IS NULL OR (authorized_at IS NOT NULL AND executed_at >= authorized_at)))');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE admission_episodes ADD CONSTRAINT b1_admission_dates CHECK (closed_at IS NULL OR closed_at >= admitted_at)');
+            DB::statement('ALTER TABLE discharges ADD CONSTRAINT b1_discharge_dates CHECK ((authorized_at IS NULL OR (requested_at IS NOT NULL AND authorized_at >= requested_at)) AND (executed_at IS NULL OR (authorized_at IS NOT NULL AND executed_at >= authorized_at)))');
+        }
     }
 
     public function down(): void

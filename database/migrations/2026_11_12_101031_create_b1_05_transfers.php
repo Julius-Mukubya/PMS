@@ -64,10 +64,12 @@ return new class extends Migration
             $table->index(['facility_id', 'entered_at', 'left_at']);
         });
 
-        DB::statement('ALTER TABLE transfers ADD CONSTRAINT b1_transfer_facilities CHECK (origin_facility_id <> destination_facility_id)');
-        DB::statement('ALTER TABLE transfers ADD CONSTRAINT b1_transfer_dates CHECK ((dispatched_at IS NULL OR dispatched_at >= requested_at) AND (received_at IS NULL OR (dispatched_at IS NOT NULL AND received_at >= dispatched_at)))');
-        DB::statement('ALTER TABLE transfer_events ADD CONSTRAINT b1_transfer_sequence CHECK (sequence > 0)');
-        DB::statement('ALTER TABLE custody_locations ADD CONSTRAINT b1_location_dates CHECK (left_at IS NULL OR left_at >= entered_at)');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE transfers ADD CONSTRAINT b1_transfer_facilities CHECK (origin_facility_id <> destination_facility_id)');
+            DB::statement('ALTER TABLE transfers ADD CONSTRAINT b1_transfer_dates CHECK ((dispatched_at IS NULL OR dispatched_at >= requested_at) AND (received_at IS NULL OR (dispatched_at IS NOT NULL AND received_at >= dispatched_at)))');
+            DB::statement('ALTER TABLE transfer_events ADD CONSTRAINT b1_transfer_sequence CHECK (sequence > 0)');
+            DB::statement('ALTER TABLE custody_locations ADD CONSTRAINT b1_location_dates CHECK (left_at IS NULL OR left_at >= entered_at)');
+        }
     }
 
     public function down(): void

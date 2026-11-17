@@ -58,8 +58,10 @@ return new class extends Migration
             $table->index(['access_scope_id', 'granted_at']);
         });
 
-        DB::statement("ALTER TABLE access_scopes ADD CONSTRAINT b1_scope_kind CHECK ((kind = 'National' AND facility_id IS NULL) OR (kind = 'Facility' AND facility_id IS NOT NULL))");
-        DB::statement('ALTER TABLE user_role_assignments ADD CONSTRAINT b1_grant_dates CHECK (ended_at IS NULL OR ended_at >= granted_at)');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement("ALTER TABLE access_scopes ADD CONSTRAINT b1_scope_kind CHECK ((kind = 'National' AND facility_id IS NULL) OR (kind = 'Facility' AND facility_id IS NOT NULL))");
+            DB::statement('ALTER TABLE user_role_assignments ADD CONSTRAINT b1_grant_dates CHECK (ended_at IS NULL OR ended_at >= granted_at)');
+        }
     }
 
     public function down(): void

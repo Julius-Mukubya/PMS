@@ -49,7 +49,9 @@ return new class extends Migration
             $table->index(['facility_id', 'status', 'start_date']);
         });
 
-        DB::statement('ALTER TABLE personnel_assignments ADD CONSTRAINT b1_posting_dates CHECK (end_date IS NULL OR end_date >= start_date)');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE personnel_assignments ADD CONSTRAINT b1_posting_dates CHECK (end_date IS NULL OR end_date >= start_date)');
+        }
     }
 
     public function down(): void

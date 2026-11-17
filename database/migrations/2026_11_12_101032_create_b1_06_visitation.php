@@ -71,9 +71,11 @@ return new class extends Migration
             $table->unique(['visit_id', 'sequence']);
         });
 
-        DB::statement('ALTER TABLE visits ADD CONSTRAINT b1_visit_schedule CHECK ((scheduled_start_at IS NULL AND scheduled_end_at IS NULL) OR (scheduled_start_at IS NOT NULL AND scheduled_end_at IS NOT NULL AND scheduled_end_at > scheduled_start_at))');
-        DB::statement('ALTER TABLE visits ADD CONSTRAINT b1_visit_checkout CHECK (checked_out_at IS NULL OR (checked_in_at IS NOT NULL AND checked_out_at >= checked_in_at))');
-        DB::statement('ALTER TABLE visit_events ADD CONSTRAINT b1_visit_sequence CHECK (sequence > 0)');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE visits ADD CONSTRAINT b1_visit_schedule CHECK ((scheduled_start_at IS NULL AND scheduled_end_at IS NULL) OR (scheduled_start_at IS NOT NULL AND scheduled_end_at IS NOT NULL AND scheduled_end_at > scheduled_start_at))');
+            DB::statement('ALTER TABLE visits ADD CONSTRAINT b1_visit_checkout CHECK (checked_out_at IS NULL OR (checked_in_at IS NOT NULL AND checked_out_at >= checked_in_at))');
+            DB::statement('ALTER TABLE visit_events ADD CONSTRAINT b1_visit_sequence CHECK (sequence > 0)');
+        }
     }
 
     public function down(): void

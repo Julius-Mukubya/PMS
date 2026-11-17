@@ -65,7 +65,9 @@ return new class extends Migration
             $table->index('correlation_id');
         });
 
-        DB::statement('ALTER TABLE document_links ADD CONSTRAINT b1_document_target CHECK ((inmate_id IS NOT NULL) + (admission_episode_id IS NOT NULL) + (legal_reference_id IS NOT NULL) + (discharge_id IS NOT NULL) + (transfer_id IS NOT NULL) + (personnel_id IS NOT NULL) + (visitor_id IS NOT NULL) + (visit_id IS NOT NULL) = 1)');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE document_links ADD CONSTRAINT b1_document_target CHECK ((inmate_id IS NOT NULL) + (admission_episode_id IS NOT NULL) + (legal_reference_id IS NOT NULL) + (discharge_id IS NOT NULL) + (transfer_id IS NOT NULL) + (personnel_id IS NOT NULL) + (visitor_id IS NOT NULL) + (visit_id IS NOT NULL) = 1)');
+        }
     }
 
     public function down(): void

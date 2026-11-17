@@ -36,7 +36,9 @@ return new class extends Migration
             $table->unique(['facility_id', 'effective_on']);
         });
 
-        DB::statement('ALTER TABLE facility_capacities ADD CONSTRAINT b1_capacity_nonnegative CHECK (capacity IS NULL OR capacity >= 0)');
+        if (in_array(DB::connection()->getDriverName(), ['mysql', 'mariadb'], true)) {
+            DB::statement('ALTER TABLE facility_capacities ADD CONSTRAINT b1_capacity_nonnegative CHECK (capacity IS NULL OR capacity >= 0)');
+        }
     }
 
     public function down(): void
