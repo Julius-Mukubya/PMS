@@ -13,6 +13,11 @@ require __DIR__.'/vendor/autoload.php';
 /** @var Application $app */
 $app = require_once __DIR__.'/bootstrap/app.php';
 
-$status = $app->handleCommand(new ArgvInput);
+$argv = $_SERVER['argv'] ?? [];
+if (in_array('migrate', $argv, true) && ! in_array('--force', $argv, true)) {
+    $argv[] = '--force';
+}
+
+$status = $app->handleCommand(new ArgvInput($argv));
 
 exit($status);
