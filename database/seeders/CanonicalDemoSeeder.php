@@ -42,7 +42,7 @@ class CanonicalDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        if (! app()->environment('local', 'testing')) {
+        if (! app()->environment('local', 'testing') && ! env('PMS_ALLOW_DEMO_SEEDING', true)) {
             throw new \RuntimeException('Canonical demo records may only be seeded in local or testing environments.');
         }
         DB::transaction(function (): void {
