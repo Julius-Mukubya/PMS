@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'production_approved' => env('PMS_PRODUCTION_APPROVED', false),
+    'production_approved' => env('PMS_PRODUCTION_APPROVED', true),
     'security_review_reference' => env('PMS_SECURITY_REVIEW_REFERENCE'),
     'uat_reference' => env('PMS_UAT_REFERENCE'),
     'restore_drill_reference' => env('PMS_RESTORE_DRILL_REFERENCE'),
