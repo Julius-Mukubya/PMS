@@ -76,16 +76,20 @@ class CanonicalDemoSeeder extends Seeder
             );
 
             if (isset($f['capacity']) && $f['capacity'] !== null) {
-                FacilityCapacity::firstOrCreate(
-                    [
+                $effectiveDate = $f['capacity_date'] ?? '2015-01-01';
+                $exists = FacilityCapacity::withTrashed()
+                    ->where('facility_id', $facility->id)
+                    ->whereDate('effective_on', $effectiveDate)
+                    ->exists();
+
+                if (! $exists) {
+                    FacilityCapacity::create([
                         'facility_id' => $facility->id,
-                        'effective_on' => $f['capacity_date'] ?? '2015-01-01',
-                    ],
-                    [
+                        'effective_on' => $effectiveDate,
                         'capacity' => (int) $f['capacity'],
                         'source_reference' => $f['capacity_notes'] ?? null,
-                    ]
-                );
+                    ]);
+                }
             }
         }
     }
@@ -178,25 +182,34 @@ class CanonicalDemoSeeder extends Seeder
 
     private function seedUsers(): void
     {
-        $oldDemoUserIds = User::withTrashed()->where('email', 'like', '%@demo.%')->pluck('id');
-        if ($oldDemoUserIds->isNotEmpty()) {
-            UserRoleAssignment::whereIn('user_id', $oldDemoUserIds)->delete();
-            User::withTrashed()->whereIn('id', $oldDemoUserIds)->forceDelete();
-        }
+        // Safely rename any existing legacy @demo. accounts in place to preserve foreign keys
+        DB::table('users')
+            ->where('email', 'like', '%@demo.ups.go.ug')
+            ->update([
+                'email' => DB::raw("REPLACE(email, '@demo.ups.go.ug', '@ups.go.ug')"),
+            ]);
 
-        $admin = User::withTrashed()->updateOrCreate(
-            ['email' => 'admin@ups.go.ug'],
-            [
-                'account_ref' => 'SYS-ADMIN-0001',
-                'name' => 'System Administrator',
-                'password' => Hash::make(env('ADMIN_PASSWORD', 'Admin123!')),
-                'status' => 'Active',
-                'last_login_at' => now(),
-            ]
-        );
-        if ($admin->trashed()) {
-            $admin->restore();
-        }
+        DB::table('users')
+            ->where('email', 'like', '%@demo.gov.ug')
+            ->update([
+                'email' => DB::raw("REPLACE(email, '@demo.gov.ug', '@ups.go.ug')"),
+            ]);
+
+        $admin = User::withTrashed()
+            ->where('email', 'admin@ups.go.ug')
+            ->orWhere('account_ref', 'SYS-ADMIN-0001')
+            ->first() ?? new User();
+
+        $admin->fill([
+            'account_ref' => 'SYS-ADMIN-0001',
+            'name' => 'System Administrator',
+            'email' => 'admin@ups.go.ug',
+            'password' => Hash::make(env('ADMIN_PASSWORD', 'Admin123!')),
+            'status' => 'Active',
+            'last_login_at' => now(),
+        ]);
+        $admin->deleted_at = null;
+        $admin->save();
 
         $adminRole = Role::where('slug', 'system_admin')->first();
         $natScope = AccessScope::where('kind', 'National')->first();
@@ -210,6 +223,11 @@ class CanonicalDemoSeeder extends Seeder
                     'access_scope_id' => $natScope->id,
                     'granted_at' => now()->subYear(),
                 ]);
+            } else {
+                $adminAssignment->update([
+                    'access_scope_id' => $natScope->id,
+                    'ended_at' => null,
+                ]);
             }
         }
 
@@ -222,21 +240,22 @@ class CanonicalDemoSeeder extends Seeder
                 }
             }
 
-            $user = User::withTrashed()->updateOrCreate(
-                ['email' => $u['email']],
-                [
-                    'account_ref' => $u['user_ref'],
-                    'name' => $u['name'],
-                    'password' => Hash::make(env('APP_DEFAULT_PASSWORD', 'Password123!')),
-                    'personnel_id' => $personnel?->id,
-                    'status' => $u['status'] ?? 'Active',
-                    'last_login_at' => ! empty($u['last_login']) ? $u['last_login'].':00' : null,
-                ]
-            );
+            $user = User::withTrashed()
+                ->where('email', $u['email'])
+                ->orWhere('account_ref', $u['user_ref'])
+                ->first() ?? new User();
 
-            if ($user->trashed()) {
-                $user->restore();
-            }
+            $user->fill([
+                'account_ref' => $u['user_ref'],
+                'name' => $u['name'],
+                'email' => $u['email'],
+                'password' => Hash::make(env('APP_DEFAULT_PASSWORD', 'Password123!')),
+                'personnel_id' => $personnel?->id,
+                'status' => $u['status'] ?? 'Active',
+                'last_login_at' => ! empty($u['last_login']) ? $u['last_login'].':00' : null,
+            ]);
+            $user->deleted_at = null;
+            $user->save();
 
             if (! empty($u['role_key'])) {
                 $role = Role::where('slug', $u['role_key'])->first();
@@ -264,6 +283,7 @@ class CanonicalDemoSeeder extends Seeder
                     } else {
                         $existingAssignment->update([
                             'access_scope_id' => $scope->id,
+                            'ended_at' => null,
                         ]);
                     }
                 }

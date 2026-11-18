@@ -14,12 +14,9 @@ require __DIR__.'/vendor/autoload.php';
 $app = require_once __DIR__.'/bootstrap/app.php';
 
 $argv = $_SERVER['argv'] ?? [];
-if (in_array('migrate', $argv, true)) {
+if (in_array('migrate', $argv, true) || in_array('db:seed', $argv, true)) {
     if (! in_array('--force', $argv, true)) {
         $argv[] = '--force';
-    }
-    if (! in_array('--seed', $argv, true)) {
-        $argv[] = '--seed';
     }
 }
 
