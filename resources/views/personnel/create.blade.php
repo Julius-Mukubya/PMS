@@ -106,7 +106,7 @@
     <x-section-heading title="Step 4 — Contact Information"/>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label class="block text-sm font-medium text-[#0F172A] mb-1.5">Official Email</label>
-            <input x-model="form.email" type="email" class="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-brand" placeholder="officer@demo.ups.go.ug"></div>
+            <input x-model="form.email" type="email" class="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-brand" placeholder="officer@ups.go.ug"></div>
         <div><label class="block text-sm font-medium text-[#0F172A] mb-1.5">Official Phone</label>
             <input x-model="form.phone" type="tel" class="w-full px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-brand" placeholder="+256 700 000 000"></div>
         <div><label class="block text-sm font-medium text-[#0F172A] mb-1.5">Emergency Contact Name</label>

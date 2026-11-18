@@ -178,7 +178,13 @@ class CanonicalDemoSeeder extends Seeder
 
     private function seedUsers(): void
     {
-        $admin = User::withTrashed()->firstOrCreate(
+        $oldDemoUserIds = User::withTrashed()->where('email', 'like', '%@demo.%')->pluck('id');
+        if ($oldDemoUserIds->isNotEmpty()) {
+            UserRoleAssignment::whereIn('user_id', $oldDemoUserIds)->delete();
+            User::withTrashed()->whereIn('id', $oldDemoUserIds)->forceDelete();
+        }
+
+        $admin = User::withTrashed()->updateOrCreate(
             ['email' => 'admin@ups.go.ug'],
             [
                 'account_ref' => 'SYS-ADMIN-0001',
@@ -188,18 +194,23 @@ class CanonicalDemoSeeder extends Seeder
                 'last_login_at' => now(),
             ]
         );
+        if ($admin->trashed()) {
+            $admin->restore();
+        }
+
         $adminRole = Role::where('slug', 'system_admin')->first();
         $natScope = AccessScope::where('kind', 'National')->first();
         if ($admin && $adminRole && $natScope) {
-            UserRoleAssignment::firstOrCreate(
-                ['assignment_ref' => 'SYS-URA-ADMIN'],
-                [
+            $adminAssignment = UserRoleAssignment::where('user_id', $admin->id)->where('role_id', $adminRole->id)->first();
+            if (! $adminAssignment) {
+                UserRoleAssignment::create([
+                    'assignment_ref' => 'SYS-URA-ADMIN',
                     'user_id' => $admin->id,
                     'role_id' => $adminRole->id,
                     'access_scope_id' => $natScope->id,
                     'granted_at' => now()->subYear(),
-                ]
-            );
+                ]);
+            }
         }
 
         foreach (UserDemoData::all() as $u) {
@@ -211,12 +222,12 @@ class CanonicalDemoSeeder extends Seeder
                 }
             }
 
-            $user = User::withTrashed()->firstOrCreate(
+            $user = User::withTrashed()->updateOrCreate(
                 ['email' => $u['email']],
                 [
                     'account_ref' => $u['user_ref'],
                     'name' => $u['name'],
-                    'password' => Hash::make(env('DEMO_USER_PASSWORD', 'Password123!')),
+                    'password' => Hash::make(env('APP_DEFAULT_PASSWORD', 'Password123!')),
                     'personnel_id' => $personnel?->id,
                     'status' => $u['status'] ?? 'Active',
                     'last_login_at' => ! empty($u['last_login']) ? $u['last_login'].':00' : null,
@@ -224,13 +235,13 @@ class CanonicalDemoSeeder extends Seeder
             );
 
             if ($user->trashed()) {
-                continue;
+                $user->restore();
             }
 
             if (! empty($u['role_key'])) {
                 $role = Role::where('slug', $u['role_key'])->first();
                 $scope = null;
-                if (($u['facility_scope'] ?? 'National') === 'National') {
+                if (str_starts_with($u['facility_scope'] ?? 'National', 'National')) {
                     $scope = AccessScope::where('kind', 'National')->first();
                 } else {
                     $fac = Facility::where('name', $u['facility_scope'])->first();
@@ -238,15 +249,23 @@ class CanonicalDemoSeeder extends Seeder
                 }
 
                 if ($role && $scope) {
-                    UserRoleAssignment::firstOrCreate(
-                        ['assignment_ref' => 'DEMO-URA-'.$user->id.'-'.$role->id],
-                        [
+                    $existingAssignment = UserRoleAssignment::where('user_id', $user->id)
+                        ->where('role_id', $role->id)
+                        ->first();
+
+                    if (! $existingAssignment) {
+                        UserRoleAssignment::create([
+                            'assignment_ref' => 'URA-'.str_pad((string) $user->id, 4, '0', STR_PAD_LEFT).'-'.$role->slug,
                             'user_id' => $user->id,
                             'role_id' => $role->id,
                             'access_scope_id' => $scope->id,
                             'granted_at' => now()->subMonths(6),
-                        ]
-                    );
+                        ]);
+                    } else {
+                        $existingAssignment->update([
+                            'access_scope_id' => $scope->id,
+                        ]);
+                    }
                 }
             }
         }

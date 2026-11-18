@@ -168,7 +168,7 @@
             <dl>
                 <x-detail-row label="Official Email">
                     @if($person['email'])
-                        <span class="text-[#2563EB]">{{ substr($person['email'], 0, 3) }}***@demo.ups.go.ug</span>
+                        <span class="text-[#2563EB]">{{ substr($person['email'], 0, 3) }}***@ups.go.ug</span>
                     @else —
                     @endif
                 </x-detail-row>
